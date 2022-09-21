@@ -1,0 +1,75 @@
+---
+title: "Common Business Models"
+---
+
+## Creating a talent marketplace
+
+Let's walk though how we would model a talent marketplace by using multiple
+price functions in the price model. We'll start with a basic scenario and see
+how we can add price functions to compose sophisticated business models.
+
+**Basic metered billing**: Cody is a consultant who provides consulting services
+at $100 per hour that is collected monthly. This is the example from the
+developer quick start.
+
+To handle Cody's billing, we create a price model with:
+
+One price function of type per-unit-meter and meter name cody-hours-worked and
+meter rate $100. Billing frequency: monthly.
+
+**Usage based billing with tiers**: Consulting retainer for $3500 per month
+which includes 40 hours and is billed at $125 for any additional hours.
+
+We create a price model with:
+
+- Two price functions:
+
+1. Type `per-unit` of $3500
+2. Type `per-unit-meter` and meter name `cody-hours-worked` with two tier. Tier
+   1: 0 to 40, meter rate is $0. Tier 2: 40+ the meter rate is $125
+
+- Billing frequency: `monthly`.
+
+**Usage based billing with split payouts**: Consulting marketplace where
+consultants have retainers with overage and the marketplace adds a 15% margin
+which passed along to the buyer. To model Cody Consultant in this marketplace,
+we would use the following.
+
+- Three price functions:
+
+1. Type `per-unit` of $3500 with destination account Cody.
+2. Type `per-unit-meter` and meter name `cody-hours-worked` with two tier. Tier
+   1: 0 to 40, meter rate is $0. Tier 2: 40+ the meter rate is $125 with
+   destination account Cody.
+3. Type `percentage` with percent `15%` an amount `sum-function-outputs`.
+
+- Billing frequency: `monthly`.
+
+Sum function outputs is a special amount variable that will take add the output
+of other price functions as an input. Sum function outputs will add up all other
+functions by default. You can also specify specific index values to only use
+specific function outputs.
+
+**Usage based billing with multiparty split payouts**: Consulting marketplace
+allows consultants to refer customers and referrer gets 5% of the margin. Bobby
+Buyer was referred by Ruby Referrer. To model this, we would create another
+customer for Ruby referrer and use the following price model.
+
+Price model with:
+
+- Four price functions:
+
+1. Type `per-unit` of $3500.
+2. Type `per-unit-meter` and meter name `cody-hours-worked` with two tier. Tier
+   1: 0 to 40, meter rate is $0. Tier 2: 40+ the meter rate is $125.
+3. Type `percentage` with percent 10% an amount `sum-function-outputs` and index
+   values [0,1].
+4. Type `percentage` with percent 5% an amount `sum-function-outputs` and index
+   values [0,1] and destination account Ruby.
+
+- Billing frequency: `monthly`.
+
+Sum function outputs is a special amount variable that will take add the output
+of other price functions as an input. Sum function outputs will add up all other
+functions by default. You can also specify specific index values to only use
+specific function outputs.

@@ -1,0 +1,123 @@
+---
+title: "Price Function Types"
+---
+
+Price functions types Aqueduct supports different types of price functions.
+These can be used individually or combined to express more complex business
+models in a price model. You can create price models using the API or the
+Aqueduct dashboard.
+
+**Variables** for a price function can either be fixed, or "allow dynamic
+values", which allows you to set new values at subscription creation time, along
+with minimum/maximum boundaries, instead of fixing the variable values at price
+model creation time.
+
+## Per-unit
+
+<Param path="unitCount" type="number" required />
+
+<Param path="rate" type="number" required />
+
+### Billing Calculation
+
+`total = unitCount * rate`
+
+This function supports prorations. A $30 a month plan that starts halfway
+through the month and is billed at the end of the month would be charged $15 the
+first month.
+
+### Examples
+
+per-unit functions can be used to bill a monthly subscription at $10 per seat
+for 5 seats.
+
+Variables for this example:
+
+```md
+unitCount: 5
+
+rate: $10.00
+
+billingFrequency: monthly
+```
+
+## Percentage
+
+<Param path="amount" type="number" required>
+  Output of another price function.
+</Param>
+
+<Param path="percent" type="number" required />
+
+### Billing Calculation
+
+`total = amount * percent`
+
+This function can use a specified amount or the output for other pricing
+functions.
+
+### Examples
+
+Percent functions can be used to represent a 50% discount on the first month
+
+Variables for this example:
+
+amount: Sum of all other price functions. percent: 50
+
+## Tiered-per-unit-meter
+
+<Param path="meter" type="string" required>
+  Refers to the event name that you're using for this meter.
+</Param>
+
+<Param path="tiers" type="list of objects" required>
+<Expandable title="object properties">
+    <Param path="tierCutoff" type="number" required/>
+    <Param path="rate" type="number" required/>
+</Expandable>
+
+</Param>
+
+Billable event associated with this meter are:
+
+```json
+{
+    eventName: string,
+    customerId: string,
+    data: {
+        count: number
+    }
+}
+```
+
+### Billing Calculation
+
+Sums the numbers of events that falls under each tier by that tier's rate.
+
+For example: 90 events with tier<br/> 0-25 = $5<br/> 25-50 = $4<br/> 50-100 =
+$3<br/>
+
+25 5 = 125 (for 0-25 events)<br/> 25 4 = 100 (for 26-50 events)<br/> 40 \* 3 =
+120 (for 51-90)<br/>
+
+Total = $225 (from adding up all tiers 125 + 100 + 120)
+
+### Examples
+
+Per unit meter is used to represent a service provider that charges $100 per
+hour and provided 20 hours of work.
+
+Variables for this example:
+
+```json
+{
+    meter: hourly_work_cody,
+    tiers: {
+        rate: $100
+    },
+    eventName: hourly_work_code (the event name and meter name must match),
+    data: {
+        count: 20
+    }
+}
+```

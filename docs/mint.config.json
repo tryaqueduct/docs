@@ -1,0 +1,109 @@
+{
+  "name": "Aqueduct",
+  "logo": {
+    "light": "/logo/aqueduct-light.svg",
+    "dark": "/logo/aqueduct-dark.svg"
+  },
+  "api": {
+    "baseUrl": "https://api.tryaqueduct.com/v1",
+    "auth": {
+      "method": "key"
+    }
+  },
+  "favicon": "/favicon.png",
+  "colors": {
+    "primary": "#0d4cea",
+    "light": "#0082f3",
+    "dark": "#1f1a42",
+    "ultraLight": "#389bf2",
+    "ultraDark": "#1b1643"
+  },
+  "topbarLinks": [
+    {
+      "name": "Usage",
+      "url": "https://www.tryaqueduct.com/usage-base"
+    },
+    {
+      "name": "Blog",
+      "url": "https://www.tryaqueduct.com/blog"
+    }
+  ],
+  "topbarCtaButton": {
+    "name": "Sign In",
+    "url": "https://dashboard.tryaqueduct.com/"
+  },
+  "anchors": [
+    {
+      "name": "Blog",
+      "icon": "newspaper",
+      "url": "https://www.tryaqueduct.com/blog"
+    }
+  ],
+  "navigation": [
+    {
+      "group": "Guides",
+      "pages": [
+        "guides/developer-quickstart",
+        "guides/how-aqueduct-works",
+        "guides/price-function-types",
+        "guides/common-business-models",
+        {
+          "group": "Using the API",
+          "pages": [
+            "using-the-api/authentication",
+            "using-the-api/webhooks",
+            "using-the-api/idempotency"
+          ]
+        }
+      ]
+    },
+    {
+      "group": "AccountOwner",
+      "pages": [
+        "api-reference/account-owner/create-account-owner",
+        "api-reference/account-owner/retrieve-account-owner",
+        "api-reference/account-owner/retrieve-list-account-owners",
+        "api-reference/account-owner/update-account-owner"
+      ]
+    },
+    {
+      "group": "Bill",
+      "pages": [
+        "api-reference/bill/bill-against-price-models",
+        "api-reference/bill/retrieve-billable-events-aqueduct",
+        "api-reference/bill/send-events-bill-against-aqueduct"
+      ]
+    },
+    {
+      "group": "PriceModel",
+      "pages": [
+        "api-reference/price-model/create-new-price-model",
+        "api-reference/price-model/list-all-price-models",
+        "api-reference/price-model/preview-output",
+        "api-reference/price-model/retrieve-price-model"
+      ]
+    },
+    {
+      "group": "Products",
+      "pages": [
+        "api-reference/products/create-new-product",
+        "api-reference/products/retrieve-product"
+      ]
+    },
+    {
+      "group": "Subscriptions",
+      "pages": [
+        "api-reference/subscriptions/retrieve-list-subscriptions",
+        "api-reference/subscriptions/retrieve-subscription",
+        "api-reference/subscriptions/update-subscription"
+      ]
+    },
+    {
+      "group": "Webhooks",
+      "pages": [
+        "api-reference/webhooks/create-webhook-endpoint",
+        "api-reference/webhooks/list-webhook-endpoints"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+---
+title: "Idempotency"
+---
+
+The Aqueduct API supports
+[idempotency](https://en.wikipedia.org/wiki/Idempotence) to ensure it is safe to
+retry requests without accidentally performing the same operation twice. This
+means that it’s always safe to retry a request if you’re unsure that it went
+through - as long as you supply the same idempotency key.
+
+There are two ways to perform idempotent requests:
+
+**On an API request**
+
+To perform an idempotent request, provide an `Idempotency-Key: <key>` HTTP
+header to any POST request. Aqueduct will save the resulting response code and
+body of the fully executed request made for an idempotency key. Any subsequent
+requests with the same idempotency key do not execute and instead return the
+same result.
+
+GET and DELETE requests do not need an idempotency key as they are always
+idempotent.
+
+Idempotency keys can be any unique string. We suggest that you use a `UUID`
+library in your programming language of choice. Note that we occasionally prune
+our idempotency key cache, but we guarantee that each idempotency key will live
+for at least 24 hours.
+
+**On billable events**
+
+We support idempotency on each BillableEvent resource. This is useful in case
+you decide to send multiple BillableEvents in a single request. You can supply
+an idempotencyKey for each BillableEvent, and Aqueduct will ensure that
+BillableEvents are not double-counted.

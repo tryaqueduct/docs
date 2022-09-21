@@ -1,0 +1,184 @@
+---
+title: "Developer Quickstart"
+description:
+  "15 minute practical tutorial where we create a metered business model and
+  issue an invoice"
+---
+
+## Set up your account and API credentials
+
+**1. Create a new account at dashboard.tryaqueduct.com**
+
+If you would like more accounts whitelisted, reach out to your Aqueduct point of
+contact or email [kathy@tryaqueduct.com](mailto:kathy@tryaqueduct.com).
+
+**2. Generate an API from the settings page.**
+
+Use your API key by including it in the header of any requests made to Aqueduct,
+which you can test out directly in the API reference.
+
+```bash Terminal
+curl --request GET \
+ --url https://api.tryaqueduct.com/v1/account-owners \
+ --header 'Accept: application/json' \
+ --header 'Authorization: Api-Key {Aqueduct-API-Key-Here}' \
+ --header 'Content-Type: application/json'
+```
+
+## Configure how you want to collect money.
+
+**1. Create a price model in the dashboard.**
+
+On Aqueduct, you express how you collect money using a PriceModel which
+expresses how much and how frequently you want to charge them. Price models
+contain price functions that can be combined to easily express sophisticated
+deals. You can read more about how price models work
+[here](https://docs.tryaqueduct.com/reference/learn-how-aqueduct-works).
+
+We'll create a basic usage based price model first and then built it into a full
+blown marketplace with split payouts, retainers, and referral fees.
+
+**Scenario:** Cody provides consulting services at $100 per hour that is
+collected monthly.
+
+To handle Cody's billing, we create a price model with:
+
+- One price function of type `per-unit-meter` and meter name `cody-hours-worked`
+  and meter rate $100.
+- Billing frequency: `monthly`.
+
+**2. Create a customer.**
+
+Customers are represented as account owners on Aqueduct. The following code
+create a customer with name Bobby Buyer and email bobby@foocorp.com. It will
+return the created account owner object with an id.
+
+```bash Terminal
+curl --request POST \
+ --url https://api.tryaqueduct.com/v1/account-owners \
+ --header 'Accept: application/json' \
+ --header 'Authorization: Api-Key {your api key here}' \
+ --header 'Content-Type: application/json' \
+ --data '
+{
+    "name": "Bobby Buyer",
+    "email": "bobby@foocorp.com"
+}
+```
+
+**3. Start the subscription.**
+
+Create a product to represent what is being sold. Products are used for
+reporting and provisioning. Cody may offer consulting at different price points
+to different customers. Cody may also offer multiple product they want to have
+reporting on such as remote consulting and in-person consulting.
+
+```bash Terminal
+curl --request POST \
+ --url https://api.tryaqueduct.com/v1/products \
+ --header 'Accept: application/json' \
+ --header 'Authorization: Api-Key {your api key here}' \
+ --header 'Content-Type: application/json' \
+ --data '{"name":"Consulting"}'
+```
+
+Call `/bill` to use the price model to bill the customer. Since the price model
+has a recurring billing frequency, it will create a subscription.
+
+```bash Terminal
+curl --request POST \
+ --url https://api.tryaqueduct.com/v1/bill \
+ --header 'Accept: application/json' \
+ --header 'Authorization: Api-Key {your api key here}' \
+ --header 'Content-Type: application/json' \
+ --data '
+{
+    "customerId": "{Bobby buyer id here}",
+    "priceModelId": "{price model id here}",
+    "productId": {product id here}
+}
+'
+```
+
+**4. Send usage events to Aqueduct.**
+
+Call `/billableEvents` to send events that should be billed against to the price
+model. The following code tells the price model that code worked 20 hours. At
+the end of the month, Bobby will be billed for $2000 since Cody added 20 hours.
+You can preview upcoming amounts in the dashboard.
+
+```bash Terminal
+curl --request POST \
+ --url https://api.tryaqueduct.com/v1/billableEvents \
+ --header 'Authorization: Api-Key {your api key here}' \
+ --header 'Content-Type: application/json' \
+ --data '
+{
+    "eventName": "cody-hours-worked",
+    "eventType": "batched",
+    "customerId": "{Bobby buyer id here}",
+    "data": {
+        "count": "20"
+    }
+}
+'
+```
+
+**5. Using price models as templates.**
+
+In the example above, we've specified all the variables when we created the
+price model and calling `/bill` primarily associated a fully formed price model
+with a customer and a product. Price models can be used as templates by only
+part of the variables when the price model is created and the rest of the models
+when calling `/bill`.
+
+For example, instead of creating a price model specifically for Cody Consultant.
+We can create a generalized price model for any consultant and then specific the
+specific values that we want for Cody when we call `/bill` to bill specifically
+for Cody.
+
+To create a generalized price model:
+
+- One price function of type `per-unit-meter` and leave the meter name and meter
+  rate unspecified.
+- frequency: monthly To specify the Cody specific information, we would make the
+  following `/bill` request with the variables object containing the missing
+  variables for each price model id.
+
+```bash Terminal
+curl --request POST \
+ --url https://api.tryaqueduct.com/v1/bill \
+ --header 'Authorization: Api-Key 198b4c91-f4d8-4e8e-9a62-ff535629417a' \
+ --header 'Content-Type: application/json' \
+ --data '
+{
+    "productId": "{product id here}",
+    "customerId": "{Bobby buyer id here}",
+    "priceModelId": "{price model id here}",
+    "variables":{
+        "{price model id}": {
+        "meter": "cody-hourly-meter",
+        "rate": "10000"
+        }
+    }
+}
+'
+```
+
+## Configure processing payments with Stripe Go to Settings → Payment Settings
+
+**1. Connect your Stripe account by
+[providing us a restricted API key](https://aqueduct.notion.site/Stripe-restricted-API-key-49514f80654e4b4c9b959643f3860275).**
+
+We recommend using a restricted API key because it allows you to be more precise
+about what permissions you give us than a connect integration and allows us to
+support a broader range of Stripe functionality for you. You can use a test api
+to play around with how the product works with Stripe.
+
+**2. Provide redirect URLs on payment success and payment cancelled.**
+
+The response from /bill will include a checkout link to show your users. You can
+direct your users to pay at that link if payments should be collected
+immediately. Otherwise, you can configure Aqueduct to send an email with an
+invoice and a request for payment which will happen on the billing frequency
+specified.

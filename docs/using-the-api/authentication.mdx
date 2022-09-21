@@ -1,0 +1,15 @@
+---
+title: "Authentication"
+description: "Aqueduct uses API keys to authenticate requests. You can view and manage your API keys in the dashboard."
+---
+
+Use you API key by including it in the header of any requests made to Aqueduct.
+API requests must be made over HTTPS.
+
+```bash
+curl --request GET \
+     --url https://api.tryaqueduct.com/v1/example \
+     --header 'Accept: application/json' \
+     --header 'Authorization: Api-Key {Aqueduct-API-Key-Here}' \
+     --header 'Content-Type: application/json'
+```

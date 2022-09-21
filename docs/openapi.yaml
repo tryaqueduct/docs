@@ -1,0 +1,944 @@
+openapi: "3.0.0"
+info:
+  version: 1.0.0
+  title: API Reference
+  description: The Aqueduct API is organized around REST.
+
+servers:
+  - url: https://api.tryaqueduct.com/v1
+paths:
+  /accountOwners:
+    post:
+      summary: Create a new account owner
+      operationId: createAccountOwner
+      tags:
+        - AccountOwner
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Name of the account owner (person or organization)
+                  example: Bobby Buyer
+                email:
+                  type: string
+                  description: Contact email address - usually the billing email of the organization
+                  example: bobby@foocorp.com
+                phoneNumber:
+                  type: string
+                  example: "555-555-5555"
+                address:
+                  $ref: "#/components/schemas/Address"
+                tags:
+                  type: array
+                  description: tags to associate with this account owner
+                  items:
+                    type: string
+                  example: ["customer", "payout-target"]
+                accountType:
+                  type: string
+                  description: AccountsReceivable (for customers), PayoutAccount. Can also be CreditsGivenAccount, CreditsReceivedAccount, CashAccount, ProcessingFeesAccount, RevenueAccount, but generally these are not created via API
+                stripeCustomerId:
+                  $ref: "#/components/schemas/stripeCustomerId"
+      responses:
+        201:
+          description: Account is created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountOwner"
+    get:
+      summary: Retrieve a list of account owners
+      operationId: getAccountOwners
+      tags:
+        - AccountOwner
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: accountType
+          required: false
+          description: The account type to fetch
+          example: PayoutAccount
+          schema:
+            type: string
+        - in: query
+          name: tag
+          required: false
+          description: The tag to filter by
+          schema:
+            type: string
+      responses:
+        200:
+          description: Returns a list of account owners that matched the parameters provided
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AccountOwner"
+  /accountOwners/{accountOwnerId}:
+    get:
+      summary: Retrieve an AccountOwner
+      operationId: getAccountOwner
+      tags:
+        - AccountOwner
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: accountOwnerId
+          required: true
+          description: The id of the AccountOwner to retrieve
+          example: acct_01FSSVRVGQ7GGB13815DE3F518
+          schema:
+            type: string
+      responses:
+        200:
+          description: Returns the requested AccountOwner
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountOwner"
+    post:
+      summary: Update an AccountOwner
+      operationId: updateAccountOwner
+      tags:
+        - AccountOwner
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: accountOwnerId
+          required: true
+          description: The id of the AccountOwner to update
+          example: acct_01FSSVRVGQ7GGB13815DE3F518
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  $ref: "#/components/schemas/accountOwnerName"
+                email:
+                  type: string
+                  description: Contact email address - usually the billing email of the organization
+                  example: bobby@foocorp.com
+                phoneNumber:
+                  type: string
+                  example: "555-555-5555"
+                stripeCustomerId:
+                  $ref: "#/components/schemas/stripeCustomerId"
+                address:
+                  $ref: "#/components/schemas/Address"
+                tags:
+                  $ref: "#/components/schemas/AccountOwnerTags"
+      responses:
+        200:
+          description: Returns the AccountOwner that was updated in the request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountOwner"
+  /bill:
+    post:
+      summary: Bill against price models
+      operationId: bill
+      tags:
+        - Bill
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - customerId
+                - productId
+              properties:
+                customerId:
+                  type: string
+                  description: Id of the account owner being billed
+                  example: owner_01FSSVRVGQ7GGB13815DE3F518
+                productId:
+                  type: string
+                  description: Id of the Product being billed for
+                  example: prod_23481242
+                priceModelId:
+                  type: string
+                  description: Id of the PriceModel being billed for. Either priceModelId or oneOffLineItems must be provided.
+                  example: prmod_23487324
+                oneOffLineItems:
+                  $ref: "#/components/schemas/OneOffLineItems"
+                firstBillingDate:
+                  $ref: "#/components/schemas/firstBillingDate"
+                variables:
+                  type: object
+                  description: An object representing the arguments supplied to the PriceModel. Each key in the object is a NamedPriceFunction Id, and the value is an object representing the arguments to that specific NamedPriceFunction.
+                  example:
+                    {
+                      "price_234535": { "percent": 20 },
+                      "price_456789": { "unitCount": 3 },
+                    }
+                contractStartDate:
+                  type: string
+                  format: date
+                  description: Time at which the contract started or is scheduled to start. Used for revenue recognition, and in the case of a subscription, also used for backdating the start date.
+                contractEndDate:
+                  type: string
+                  format: date
+                  description: Time at which the contract is scheduled to end.
+      responses:
+        200:
+          description: Successfully billed the AccountOwner. Will create a quote, invoice, or subscription depending on the price model provided.
+  /billableEvents:
+    post:
+      summary: Send events you may want to bill against Aqueduct
+      operationId: sendBillableEvents
+      tags:
+        - Bill
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                eventName:
+                  type: string
+                  description: This is the name that's referenced by the price function that billing against this event. You can create billable events and then apply a price function to the event.
+                eventType:
+                  type: string
+                  description: Determines the schema enum for the event. Possible values are "count"
+                customerId:
+                  type: string
+                  description: The id of the account owner that should be billed in association with this billable event.
+                data:
+                  type: object
+                  description: Batch events expect count which is a number, optionally a description
+      responses:
+        204:
+          description: Billing event received successfully
+    get:
+      summary: Retrieve billable events that have been sent to Aqueduct
+      operationId: getBillableEvents
+      tags:
+        - Bill
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: eventName
+          required: true
+          description: The eventName to filter by
+          schema:
+            type: string
+          example: cpu-hours
+        - in: query
+          name: customerId
+          required: true
+          description: The AccountOwner Id to filter by
+          schema:
+            type: string
+          example: owner_3435343
+      responses:
+        200:
+          description: Returns a list of BillableEvents that matched the parameters provided
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BillableEvent"
+  /products:
+    post:
+      summary: Create a new product
+      operationId: createProduct
+      security:
+        - bearerAuth: []
+      tags:
+        - Products
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Name of the product
+                  example: Professional teams plan
+      responses:
+        201:
+          description: Returns the created Product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+  /products/{productId}:
+    get:
+      summary: Retrieve a product
+      operationId: getProduct
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: productId
+          required: true
+          description: The id of the Product to retrieve
+          example: prod_01FSSVRVGQ7GGB13815DE3F518
+          schema:
+            type: string
+      tags:
+        - Products
+      responses:
+        200:
+          description: Returns the requested Product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+  /pricemodels:
+    post:
+      summary: Create a new price model
+      operationId: createPriceModel
+      tags:
+        - PriceModel
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Name of the price model.
+                  example: Flat rate with included usage plus overage
+                namedPriceFunctions:
+                  $ref: "#/components/schemas/NamedPriceFunctions"
+      responses:
+        201:
+          description: Returns the created PriceModel
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PriceModel"
+    get:
+      summary: List all price models
+      operationId: listPriceModels
+      tags:
+        - PriceModel
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Returns all price models
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PriceModel"
+  /pricemodels/{pricemodelId}:
+    get:
+      summary: Retrieve a PriceModel
+      tags:
+        - PriceModel
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: pricemodelId
+          required: true
+          description: The id of the PriceModel to retrieve
+          example: prmod_01FSSVRVGQ7GGB13815DE3F518
+          schema:
+            type: string
+      responses:
+        201:
+          description: Returns the requested PriceModel
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PriceModel"
+  /pricemodels/{pricemodelId}/preview:
+    post:
+      summary: Preview the output of a PriceModel
+      tags:
+        - PriceModel
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: pricemodelId
+          required: true
+          description: The id of the PriceModel to preview
+          example: prmod_01FSSVRVGQ7GGB13815DE3F518
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                variables:
+                  type: object
+                  description: An object containing the inputs the PriceModel expects.
+                billingPeriod:
+                  type: object
+                  description: An object representing the billing period. This is required if the PriceModel includes a metered NamedPriceFunction.
+                  properties:
+                    startDate:
+                      description: Time at which the the billing period started or is scheduled to start.
+                      format: date
+                      example: 2022-04-02T00:00:00Z
+                    endDate:
+                      description: Time at which the the billing period ended or is scheduled to end.
+                      format: date
+                      example: 2022-04-02T00:00:00Z
+                accountOwnerId:
+                  type: string
+                  description: The id of the accountOwner to use when retrieving meter data
+      responses:
+        200:
+          description: Returns the generated line items
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LineItems"
+  /subscriptions:
+    get:
+      summary: Retrieve a list of subscriptions
+      tags:
+        - Subscriptions
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Returns a list of all your subscriptions and recurring billings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subscriptions"
+  /subscriptions/{subscriptionId}:
+    get:
+      summary: Retrieve a subscription
+      tags:
+        - Subscriptions
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: subscriptionId
+          required: true
+          description: The id of the subscription to retrieve
+          example: sub_01FSSVRVGQ7GGB13815DE3F518
+          schema:
+            type: string
+      responses:
+        200:
+          description: Returns the subscription for a valid id.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subscription"
+    post:
+      summary: Update a subscription
+      operationId: updateSubscription
+      tags:
+        - Subscriptions
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: subscriptionId
+          required: true
+          description: The id of the subscription to retrieve
+          example: sub_01FSSVRVGQ7GGB13815DE3F518
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  $ref: "#/components/schemas/subscriptionName"
+                variables:
+                  type: object
+                  description: An object containing the inputs the PriceModel expects.
+                startDate:
+                  type: string
+                  description: Time at which the subscription started or is scheduled to start. Can also be used for backdating
+                  format: date
+                  example: 2022-04-02T00:00:00Z
+                endDate:
+                  $ref: "#/components/schemas/subscriptionEndDate"
+      responses:
+        200:
+          description: Returns the Subscription that was updated in the request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subscription"
+  /webhookendpoints:
+    post:
+      summary: Creates a webhook endpoint.
+      operationId: createwebhook
+      tags:
+        - Webhooks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                description:
+                  $ref: "#/components/schemas/webhookDescription"
+                url:
+                  $ref: "#/components/schemas/webhookUrl"
+                enabledEvents:
+                  $ref: "#/components/schemas/webhookEnabledEvents"
+      responses:
+        201:
+          description: Returns the created webhook endpoint
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebhookEndpoint"
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    get:
+      summary: List all webhook endpoints
+      operationId: listwebhooks
+      tags:
+        - Webhooks
+      responses:
+        200:
+          description: Returns an array of your webhook endpoints. Aqueduct current supports a maximum of 100 unique endpoints.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebhookEndpoints"
+        default:
+          description: Error response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: apiKey
+      name: Authorization
+      in: header
+  schemas:
+    id:
+      type: string
+      description: A unique identifier for the object
+    stripeCustomerId:
+      type: string
+      description: The Stripe Customer Id associated with this account owner. Will be used for all Stripe payments associated with the account owner.
+      example: cus_234827394
+    accountOwnerEmail:
+      type: string
+      description: Contact email address - usually the billing email of the organization
+      example: bobby@foocorp.com
+    accountOwnerName:
+      type: string
+      description: Name of the account owner (person or organization)
+      example: Bobby Buyer
+    currency:
+      type: string
+      description: Three-letter ISO currency code. Must be a supported currency.
+      example: USD
+    firstBillingDate:
+      type: string
+      description: The date of the first full invoice and anchors subsequent invoices on the the day of the month. <br /><br /> For example, a $30 dollar monthly recurring bill that is sent in the middle of April with an billing cycle anchor of May 1st would result in an invoice created immediately for $15 and then another $30 invoice sent out on May 1st.
+      format: date
+      example: 2022-03-15T15:53:00Z
+    createdAt:
+      type: string
+      description: Time at which the object was created.
+      format: date
+      example: 2022-01-15T15:53:00Z
+    subscriptionBillingFrequency:
+      type: string
+      description: The frequency at which this subscription is billed. Values include `once`, `monthly`, `annually`
+      example: monthly
+    subscriptionEndDate:
+      type: string
+      description: Time at which the subscription ended or is scheduled to end.
+      format: date
+      example: 2023-01-15T15:53:00Z
+    subscriptionName:
+      type: string
+      description: The subscription's name. Meant to be displayable to your customers.
+      example: "Monthly gold plan"
+    subscriptionStatus:
+      type: string
+      description: The status of this subscription. Values include `ended`, and `active`.
+    webhookDescription:
+      type: string
+      description: An optional description of what the webhook is used for.
+      example: This webhook listens to events from Aqueduct
+    webhookUrl:
+      type: string
+      example: https://foo.com/example/endpoint
+      description: The url of the webhook endpoint.
+    webhookEnabledEvents:
+      type: array
+      items:
+        type: string
+        example: ["provisioning_start", "provisioning_update"]
+      description: The list of events to enable for this endpoint
+    LineItems:
+      type: array
+      items:
+        $ref: "#/components/schemas/LineItem"
+    LineItem:
+      description: Line item generated from running a PriceModel.
+      properties:
+        description:
+          type: string
+          description: Description of what the one of line item is. This will be displayed to your customers in the invoice.
+        currency:
+          $ref: "#/components/schemas/currency"
+        isDiscount:
+          type: boolean
+          description: Whether this line item should be deducted from the total as a discount
+        amount:
+          type: number
+          description: The amount to charge for this line item
+        namedPriceFunctionId:
+          type: string
+          description: The id of the NamedPriceFunction that generated this line item
+    OneOffLineItems:
+      type: array
+      items:
+        $ref: "#/components/schemas/OneOffLineItem"
+    OneOffLineItem:
+      description: One off line item to be added to an Invoice that is not associated with a specific price model.
+      properties:
+        description:
+          type: string
+          description: Description of what the one of line item is. This will be displayed to your customers in the invoice.
+        currency:
+          $ref: "#/components/schemas/currency"
+        isDiscount:
+          type: boolean
+          description: Whether this line item should be deducted from the total as a discount
+        lineItemAmount:
+          type: number
+          description: The amount to charge for this line item
+        variables:
+          type: object
+    NamedPriceFunctions:
+      type: array
+      items:
+        $ref: "#/components/schemas/NamedPriceFunction"
+    Subscriptions:
+      type: array
+      items:
+        $ref: "#/components/schemas/Subscription"
+    HydratedSubscription:
+      description: A way to bill customers on a recurring basis. Subscriptions are created from a price model with a billing frequency.
+      properties:
+        id:
+          $ref: "#/components/schemas/id"
+          example: sub_01FSSVRVGQ7GGB13815DE3F518
+        name:
+          $ref: "#/components/schemas/subscriptionName"
+        accountOwner:
+          $ref: "#/components/schemas/AccountOwner"
+        createdAt:
+          $ref: "#/components/schemas/createdAt"
+        endDate:
+          $ref: "#/components/schemas/subscriptionEndDate"
+        productId:
+          type: string
+          description: Id of the product this subscription provides access to
+          example: prod_12PSSMRLGQ7MMQ13565DE3F557
+        billingFrequency:
+          $ref: "#/components/schemas/subscriptionBillingFrequency"
+        firstBillingDate:
+          $ref: "#/components/schemas/firstBillingDate"
+        priceModelId:
+          type: string
+          description: Id of the price model associated with this subscription
+        namedPriceFunctions:
+          $ref: "#/components/schemas/NamedPriceFunctions"
+        nextBillingDate:
+          type: string
+          description: Time at which the subscription will create the next invoice.
+        status:
+          $ref: "#/components/schemas/subscriptionStatus"
+    Subscription:
+      description: A way to bill customers on a recurring basis. Subscriptions are created from a price model with a billing frequency.
+      properties:
+        id:
+          $ref: "#/components/schemas/id"
+          example: sub_01FSSVRVGQ7GGB13815DE3F518
+        name:
+          $ref: "#/components/schemas/subscriptionName"
+        accountOwnerId:
+          type: string
+          description: Id of the account owner associated with this subscription
+        createdAt:
+          $ref: "#/components/schemas/createdAt"
+        endDate:
+          $ref: "#/components/schemas/subscriptionEndDate"
+        productId:
+          type: string
+          description: Id of the product this subscription provides access to
+          example: prod_12PSSMRLGQ7MMQ13565DE3F557
+        billingFrequency:
+          $ref: "#/components/schemas/subscriptionBillingFrequency"
+        firstBillingDate:
+          $ref: "#/components/schemas/firstBillingDate"
+        priceModelId:
+          type: string
+          description: Id of the price model associated with this subscription
+        status:
+          $ref: "#/components/schemas/subscriptionStatus"
+    WebhookEndpoint:
+      description: You can configure a webhook endpoint to be notified about events that happen on Aqueduct programmatically.
+      required:
+        - id
+        - url
+        - enabledEvents
+        - createdAt
+      properties:
+        id:
+          type: string
+          example: web_01FSSVRVGQ7GGB13815DE3F518
+        url:
+          $ref: "#/components/schemas/webhookUrl"
+        enabledEvents:
+          $ref: "#/components/schemas/webhookEnabledEvents"
+        createdAt:
+          $ref: "#/components/schemas/createdAt"
+        description:
+          $ref: "#/components/schemas/webhookDescription"
+        secret:
+          description: A string that is used to verify the webhook. Only returned at creation
+          example: "This is only included at webhook endpoint creation"
+          type: string
+    WebhookEndpoints:
+      type: array
+      items:
+        $ref: "#/components/schemas/WebhookEndpoint"
+    Error:
+      description: An error response from the Aqueduct api
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+    Provisioning:
+      description: A provisioning object allows you to track and manage the lifecycle of provisioned product for your customer. You can schedule trials, service start, servic end and grace periods and Aqueduct will notify your application via webhooks when it is time to update the provisioning state.
+      properties:
+        id:
+          type: string
+          example: prov_01FSSVRVGQ7GGB13815DE3F518
+        product:
+          $ref: "#/components/schemas/Product"
+        createdAt:
+          $ref: "#/components/schemas/createdAt"
+    NamedPriceFunction:
+      description: A price function represent how calculate the price for a given product.
+      required:
+        - id
+        - name
+        - type
+        - currency
+        - billingFrequency
+      properties:
+        id:
+          $ref: "#/components/schemas/id"
+          type: string
+          example: price_01FSSVRVGQ7GGB13815DE3F518
+        name:
+          type: string
+          description: The NamedPriceFunction name, mean to to be displayed to your customers. This will be used to create line item descriptions in quotes and invoices.
+          example: "API requests"
+        type:
+          type: string
+          description: Possible values are per-unit, percentage, and tiered-per-unit-meter
+          example: "per-unit"
+        billingFrequency:
+          type: string
+          description: How often this NamedPriceFunction should evaluate. Possible values are "once", "monthly", "annually"
+          example: "monthly"
+        variables:
+          type: object
+          description: An object containing the inputs the NamedPriceFunction expects.
+        currency:
+          $ref: "#/components/schemas/currency"
+        isDiscount:
+          type: boolean
+          description: Whether the NamedPriceFunction should be subtracted from a billing total as discount.
+        destinationAccountId:
+          type: string
+          description: The id of a Account where any amount collected from this NamedPriceFunction should be paid to out. Leaving this blank defaults to paying out to the primary business Account associated with Aqueduct.
+    PriceModel:
+      description: A group of NamedPriceFunctions used to express more complex business models. All NamedPriceFunctions in a PriceModel must have the same billing frequency.
+      required:
+        - id
+        - name
+        - namedPriceFunctions
+      properties:
+        id:
+          $ref: "#/components/schemas/id"
+          type: string
+          example: prmod_01FSSVRVGQ7GGB13815DE3F518
+        name:
+          type: string
+          description: A description of the price model.
+        namedPriceFunctions:
+          $ref: "#/components/schemas/NamedPriceFunctions"
+    Product:
+      description: A product describes the specific good or service you offer to you customer. Products are used with PricingFunctions to create quotes and invoices.
+      required:
+        - id
+        - name
+      properties:
+        id:
+          $ref: "#/components/schemas/id"
+          type: string
+          example: prod_01FSSVRVGQ7GGB13815DE3F518
+        name:
+          type: string
+          description: The product's name, meant to be displayed to your customers. This will show up on quotes and invoices.
+          example: "Professional teams plan"
+    Address:
+      description: A physical address associated with an account owner
+      type: object
+      properties:
+        addressLine1:
+          type: string
+          example: 123 Cherry Lane
+        addressLine2:
+          type: string
+          example: Apt 456
+        city:
+          type: string
+          example: San Francisco
+        state:
+          type: string
+          example: CA
+        postalCode:
+          type: string
+          example: "94103"
+        country:
+          type: string
+          example: USA
+    AccountOwnerTags:
+      type: array
+      description: Tags associated with this account owner
+      items:
+        type: string
+      example: ["customer", "payout-target"]
+    Account:
+      description: A ledger account - carries its own balance and is used in ledger transactions
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/id"
+          type: string
+          example: acct_01FSSVRVGQ7GGB13815DE3F518
+        currentBalance:
+          type: number
+        currency:
+          $ref: "#/components/schemas/currency"
+        isCredits:
+          description: Whether or not the balance on this account represents credits vs actual money
+          type: boolean
+          example: true
+        tag:
+          description: used in tandem with isCredits - a tagged credit account can be used to limit the application of credits to particular purchases
+          type: string
+          example: marketplace
+    AccountOwner:
+      description: Person or organization that owns an Account
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/id"
+          type: string
+          example: owner_01FSSVRVGQ7GGB13815DE3F518
+        name:
+          $ref: "#/components/schemas/accountOwnerName"
+        email:
+          $ref: "#/components/schemas/accountOwnerEmail"
+        phoneNumber:
+          type: string
+          example: "555-555-5555"
+        address:
+          $ref: "#/components/schemas/Address"
+        tags:
+          $ref: "#/components/schemas/AccountOwnerTags"
+        primaryAccount:
+          description: The default ledger account for this account owner - as opposed to additional accounts for e.g. credits
+          $ref: "#/components/schemas/Account"
+        stripeCustomerId:
+          $ref: "#/components/schemas/stripeCustomerId"
+    BillableEvent:
+      description: An event that can be used for usage-based billing
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/id"
+          type: string
+          example: bevth_23423434
+        timestamp:
+          type: string
+          description: The datetime associated with this event
+          example: 2022-03-15T15:53:00Z
+        accountOwnerId:
+          type: string
+          description: The id of the AccountOwner associated with this event
+          example: owner_23843573
+        eventType:
+          type: string
+          description: The type of event. Use the "count" eventType alongside the tiered-per-unit-meter NamedPriceFunctions.
+          example: count
+        meterId:
+          type: string
+          description: The id of the meter associated with this event
+          example: cpu-hours
+        count:
+          type: number
+          description: The count associated with this event. Used alongside the tiered-per-unit-meter NamedPriceFunctions.
+          example: 3
