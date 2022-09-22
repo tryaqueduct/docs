@@ -24,8 +24,8 @@
       "url": "https://www.tryaqueduct.com/usage-base"
     },
     {
-      "name": "API Reference",
-      "url": "api-reference"
+      "name": "Blog",
+      "url": "https://www.tryaqueduct.com/blog"
     }
   ],
   "topbarCtaButton": {
@@ -34,9 +34,9 @@
   },
   "anchors": [
     {
-      "name": "Blog",
-      "icon": "newspaper",
-      "url": "https://www.tryaqueduct.com/blog"
+      "name": "API Reference",
+      "icon": "rectangle-terminal",
+      "url": "api-reference"
     }
   ],
   "navigation": [
