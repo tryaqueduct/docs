@@ -58,56 +58,51 @@
       ]
     },
     {
-      "group": "API Reference",
+      "group": "AccountOwner",
       "pages": [
-        {
-          "group": "AccountOwner",
-          "pages": [
-            "api-reference/account-owner/create-account-owner",
-            "api-reference/account-owner/retrieve-account-owner",
-            "api-reference/account-owner/retrieve-list-account-owners",
-            "api-reference/account-owner/update-account-owner"
-          ]
-        },
-        {
-          "group": "Bill",
-          "pages": [
-            "api-reference/bill/bill-against-price-models",
-            "api-reference/bill/retrieve-billable-events-aqueduct",
-            "api-reference/bill/send-events-bill-against-aqueduct"
-          ]
-        },
-        {
-          "group": "PriceModel",
-          "pages": [
-            "api-reference/price-model/create-new-price-model",
-            "api-reference/price-model/list-all-price-models",
-            "api-reference/price-model/preview-output",
-            "api-reference/price-model/retrieve-price-model"
-          ]
-        },
-        {
-          "group": "Products",
-          "pages": [
-            "api-reference/products/create-new-product",
-            "api-reference/products/retrieve-product"
-          ]
-        },
-        {
-          "group": "Subscriptions",
-          "pages": [
-            "api-reference/subscriptions/retrieve-list-subscriptions",
-            "api-reference/subscriptions/retrieve-subscription",
-            "api-reference/subscriptions/update-subscription"
-          ]
-        },
-        {
-          "group": "Webhooks",
-          "pages": [
-            "api-reference/webhooks/create-webhook-endpoint",
-            "api-reference/webhooks/list-webhook-endpoints"
-          ]
-        }
+        "api-reference/account-owner/create-account-owner",
+        "api-reference/account-owner/retrieve-account-owner",
+        "api-reference/account-owner/retrieve-list-account-owners",
+        "api-reference/account-owner/update-account-owner"
+      ]
+    },
+    {
+      "group": "Bill",
+      "pages": [
+        "api-reference/bill/bill-against-price-models",
+        "api-reference/bill/retrieve-billable-events-aqueduct",
+        "api-reference/bill/send-events-bill-against-aqueduct"
+      ]
+    },
+    {
+      "group": "PriceModel",
+      "pages": [
+        "api-reference/price-model/create-new-price-model",
+        "api-reference/price-model/list-all-price-models",
+        "api-reference/price-model/preview-output",
+        "api-reference/price-model/retrieve-price-model"
+      ]
+    },
+    {
+      "group": "Products",
+      "pages": [
+        "api-reference/products/create-new-product",
+        "api-reference/products/retrieve-product"
+      ]
+    },
+    {
+      "group": "Subscriptions",
+      "pages": [
+        "api-reference/subscriptions/retrieve-list-subscriptions",
+        "api-reference/subscriptions/retrieve-subscription",
+        "api-reference/subscriptions/update-subscription"
+      ]
+    },
+    {
+      "group": "Webhooks",
+      "pages": [
+        "api-reference/webhooks/create-webhook-endpoint",
+        "api-reference/webhooks/list-webhook-endpoints"
       ]
     }
   ]
