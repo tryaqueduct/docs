@@ -7,7 +7,8 @@
   "api": {
     "baseUrl": "https://api.tryaqueduct.com/v1",
     "auth": {
-      "method": "key"
+      "method": "key",
+      "name": "Authorization"
     }
   },
   "favicon": "/favicon.png",
