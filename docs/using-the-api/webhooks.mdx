@@ -2,16 +2,15 @@
 title: "Webhooks"
 ---
 
-1. Login to the [Aqueduct Dashboard](https://dashboard.tryaqueduct.com/#/login)
-   and fetch/generate your API key from the
-   [settings page](https://dashboard.tryaqueduct.com/#/login)
-2. **Use the API to subscribe your webhook endpoint to relevant Aqueduct
-   events.** The ones that for provisioning are “provisioning.start” and
-   “provisioning.end”
+The most common use case for webhooks is provisioning and deactivating user accounts based on that user's invoice status. 
 
-You can use the `curl` request below, just make sure you properly substitute in
-your API key, URL, and secret (tip: if you’re lazy, you can probably just use
-the api key as the secret)
+Use webhooks to receive updates on events in Aqueduct. Each time an event that you subscribed to occurs, Aqueduct submits a POST request to the designated webhook URL with information about the event. 
+
+### Creating a webhook 
+
+1. **Get your API key**Login to the [Aqueduct Dashboard](https://dashboard.tryaqueduct.com/) and fetch/generate your API key from the [settings page](https://dashboard.tryaqueduct.com/#/settings)
+2. **Identify the relevant events you'd like to subscribe to** Here's our list of [supported webhook events](https://docs.tryaqueduct.com/reference/types-of-webhook-events).
+3. ** Create a webhook using the webhooks endpoint API** You can use the `curl` request below, just make sure you properly substitute in your API key, URL, and secret. Events you want to be subscribed to should be passed in under "enabledEvents"
 
 ```bash
 curl --location \
@@ -24,60 +23,15 @@ curl --location \
     "secret": "<insert-your-secret-here>"
 }'
 ```
+If you registered the webhook successfully, you should be able to see it in the settings page: 
 
-If you registered the webhook successfully, you should be able to see it in the
-settings page:
+### Testing and responding to webhooks
 
-For development purposes, we suggest you use ngrok. One helpful feature that
-ngrok has is the ability to replay any incoming request - so for example, if you
-discover a bug in handling a particular webhook, you can just keep replaying
-that one problematic request over and over in ngrok, without needing to create a
-new invoice on the Aqueduct dashboard.
+For development purposes, we suggest you use [ngrok](https://ngrok.com/). Ngrok allows you to replay any incoming request so you can replay the Aqueduct webhook post-event over and over during testing instead of having to re-trigger the event. 
 
-3. **Create a webhook endpoint as an HTTP endpoint in your backend.** When an
-   event you are monitoring is triggered, Aqueduct will call this endpoint as a
-   POST request and deliver the data as a JSON payload.
-4. **Trigger a test webhook request to test the integration.** You can do this
-   on the Settings page by clicking the “send test event” button next to your
-   webhook
-5. **Trigger a provisioning webhook.** You can do this by using any
-   [Invoice template](https://dashboard.tryaqueduct.com/#/contract-templates) to
-   create an invoice, and setting the `effective date` to today. Once the
-   invoice is created, a provisioning webhook will immediately fire. the payload
-   will look like:
+1. **Create a webhook endpoint as an HTTP endpoint in your backend**. When an event you are monitoring is triggered, Aqueduct will call this endpoint with a POST request and deliver the data as a JSON payload. 
+2. **Trigger a test webhook request to test the integration.** You can do this on the [Settings](https://dashboard.tryaqueduct.com/#/settings) page by clicking the “send test event” button next to your webhook. 
+3. **Implement logic handling the webhook in your backend.** Once you receive the payload, you can run whatever logic is suitable for you app. For example, you want want to provision your customer's access to your product after the product is mark as paid. Please a 2xx respond status code before running any complex logic so the request doesn't time out.
+4. **Trigger the webhook event you're planning on using.** For example, if you're developing against `invoice.paid`, create a test Invoice in the dashboard and manually mark it as paid. 
 
-```json
-// The provisioning object
-{
-  "productId": ProductId
-  "customerId": CustomerId
-  "startDate": Date // When the provisioning.start webhook is triggered
-  "endDate": Date // When the provisioning.end webhook is triggered
-  "invoiceId": InvoiceId | null
-  "subscriptionId": SubscriptionId | null // Aqueduct subscription
-  "metadata": object // Hashmap to pass through extra fields
-    "customerId": CustomerId,
-  "externalSubscriptionId": object | null // External subscription id
-  "provisioningOrgs": {
-        name: string,
-        users: { name: string, email: string }[]
-  }[]
-
-    // Start and end dates are computed from these
-    "contractStartDate": Date // Service period start that the user is paying for
-    "contractEndDate": Date // Service period that the user is paying for
-    "gracePeriodEndDate": Date // End of the grace period
-    // We can also add managing trials if that's interesting to replit
-}
-```
-
-6. **Implement logic handling the webhook in your backend.** Once you receive
-   the payload, you can run whatever logic is suitable for you app. For example,
-   you want want to provision your customer's access to your product after the
-   product is mark as paid. Please a 2xx respond status code before running any
-   complex logic so the request doesn't time out.
-
-Aqueduct will retry events up to 4 times for 3xx, 4xx, and 5xx response codes
-with a 1 hour, 6hr, 12hr, and 24hr delay. After all 4 events are attempted, we
-will email you about the failure and stop attempting this webhook. You can go
-back into the dashboard to turn on disabled webhooks.
+Aqueduct will retry events up to 4 times for 3xx, 4xx, and 5xx response codes with a 1 hour, 6hr, 12hr, and 24hr delay. After all 4 events are attempted, we will email you about the failure and stop attempting this webhook. You can go back into the dashboard to turn on disabled webhooks.
